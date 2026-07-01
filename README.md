@@ -56,6 +56,7 @@ Copy the example file and fill in your credentials:
 cp .env.example .env.local
 ```
 
+---
 
 ### 3. Set up Firebase
 
