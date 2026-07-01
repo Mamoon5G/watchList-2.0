@@ -1,20 +1,136 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Watchly
 
-# Run and deploy your AI Studio app
+A public watchlist app for movies, series, anime, and books. Sign up, get a personal URL (`/your-username`), and share your taste with anyone — no account required to view.
 
-This contains everything you need to run your app locally.
+Built with Next.js, Firebase, and Tailwind CSS.
 
-View your app in AI Studio: https://ai.studio/apps/a79ef7fa-f6b0-40ac-b5fa-b71ff99e3206
+---
 
-## Run Locally
+## Features
 
-**Prerequisites:**  Node.js
+- **Public profiles** — every user gets a shareable `/:username` page
+- **Four categories** — Movies, Series, Anime, Books & Comics
+- **Poster art** — automatically fetched from TMDB (movies/series/anime) and Open Library (books)
+- **Pending / Finished tracking** — mark items as watched or toggle them back
+- **Real-time updates** — powered by Firestore's `onSnapshot`
+- **Dark mode** — system-aware with manual toggle
+- **Auth** — email/password sign-up and login via Firebase Auth
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Database & Auth | Firebase Firestore + Firebase Auth |
+| Styling | Tailwind CSS v4 |
+| Animations | Motion (Framer Motion) |
+| Poster APIs | TMDB API, Open Library API |
+| Forms | React Hook Form + Zod |
+| Toasts | Sonner |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- A [Firebase](https://console.firebase.google.com/) project with Firestore and Authentication enabled
+- A [TMDB API key](https://www.themoviedb.org/settings/api) (optional — posters won't load without it)
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/Mamoon5G/watchly.git
+cd watchly
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy the example file and fill in your credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+### 3. Set up Firebase
+
+In your Firebase project:
+
+1. Enable **Email/Password** sign-in under Authentication → Sign-in method
+2. Create a **Firestore** database in production mode
+3. Add the following security rules:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read on user profiles and watchlists
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      match /watchlist/{itemId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
+```
+
+### 4. Run locally
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Project Structure
+
+```
+app/
+  page.tsx              # Landing page with auth
+  [username]/page.tsx   # Public watchlist page
+components/
+  AuthPanel.tsx         # Sign in / sign up form
+  Watchlist.tsx         # Main watchlist view (owner + visitor)
+  WatchlistItem.tsx     # Individual card with poster
+  AddItemComposer.tsx   # Input for adding new items
+  ThemeToggle.tsx       # Dark/light mode toggle
+  ThemeProvider.tsx     # next-themes wrapper
+lib/
+  auth.ts               # Firebase Auth helpers
+  firebase.ts           # Firebase app initialization
+  tmdb.ts               # TMDB poster search
+  books.ts              # Open Library cover search
+  types.ts              # Shared TypeScript types
+  utils.ts              # Utility functions
+```
+
+---
+
+## Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Production build
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+---
+
+## License
+
+MIT
+
+---
+
+*Created by [Mamoon Siddiqui](https://github.com/Mamoon5G)*
