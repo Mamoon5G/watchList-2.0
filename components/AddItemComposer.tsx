@@ -7,6 +7,7 @@ import { Category, SearchResult } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { searchTMDBOptions, getTMDBDetails } from '@/lib/tmdb';
 import { searchBookOptions, getBookDetails } from '@/lib/books';
+import { searchAniListOptions } from '@/lib/anilist';
 
 interface AddItemComposerProps {
   onAdd: (data: { name: string, type: Category, watched: boolean, imageUrl?: string | null, director?: string | null, leadActor?: string | null, releaseYear?: string | null, author?: string | null }) => void;
@@ -41,7 +42,13 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
         setIsSearching(true);
         let results: SearchResult[] = [];
         if (type === 'books') {
-          results = await searchBookOptions(name);
+          const bookResults = await searchBookOptions(name);
+          const aniListResults = await searchAniListOptions(name, 'MANGA');
+          results = [...aniListResults, ...bookResults];
+        } else if (type === 'anime') {
+          const aniListResults = await searchAniListOptions(name);
+          const tmdbResults = await searchTMDBOptions(name, type);
+          results = [...aniListResults, ...tmdbResults.slice(0, 2)];
         } else {
           results = await searchTMDBOptions(name, type);
         }
@@ -139,7 +146,8 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
     inputRef.current?.focus();
   };
 
-  const showOptions = isFocused || name.length > 0;
+  const showCard = isFocused;
+  const showRocket = isFocused || name.length > 0;
 
   return (
     <div 
@@ -170,7 +178,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
             className="w-full relative z-10 bg-neutral-100/50 dark:bg-neutral-800/40 border-2 border-neutral-200/40 dark:border-neutral-800/40 focus:border-indigo-500 py-3.5 pl-4 pr-12 rounded-xl text-sm outline-none transition-all placeholder:text-neutral-400/50 dark:placeholder:text-neutral-500/50 font-medium"
           />
           <AnimatePresence>
-            {showOptions ? (
+            {showRocket ? (
               <motion.button
                 key="active"
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -178,7 +186,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
                 exit={{ opacity: 0, scale: 0.8 }}
                 type="submit"
                 disabled={!name.trim() || isAdding}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 z-20 text-neutral-400 hover:text-indigo-500 disabled:opacity-30 transition-colors"
               >
                 {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </motion.button>
@@ -194,7 +202,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
         </div>
 
         <AnimatePresence>
-          {showOptions && (
+          {showCard && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
