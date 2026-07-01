@@ -17,12 +17,12 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
 
   const getIcon = () => {
     switch (item.type as string) {
-      case 'movie': return <Film className="w-4 h-4" />;
-      case 'series': return <Tv className="w-4 h-4" />;
-      case 'anime': return <Popcorn className="w-4 h-4" />;
-      case 'books': return <Book className="w-4 h-4" />;
-      case 'comics': return <BookOpen className="w-4 h-4" />;
-      default: return <Film className="w-4 h-4" />;
+      case 'movie': return <Film className="w-3.5 h-3.5" />;
+      case 'series': return <Tv className="w-3.5 h-3.5" />;
+      case 'anime': return <Popcorn className="w-3.5 h-3.5" />;
+      case 'books': return <Book className="w-3.5 h-3.5" />;
+      case 'comics': return <BookOpen className="w-3.5 h-3.5" />;
+      default: return <Film className="w-3.5 h-3.5" />;
     }
   };
 
@@ -81,17 +81,28 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className={`font-semibold line-clamp-2 mb-2 h-12 ${item.watched ? 'line-through decoration-neutral-300 dark:decoration-neutral-600 decoration-[0.5px] text-neutral-400/80 font-normal' : 'text-neutral-900 dark:text-white'}`}>
-          {item.name}
-        </h3>
+      <div className="p-4 flex flex-col flex-1 relative z-10">
+        <div className="flex items-start justify-between gap-2 mb-0.5">
+          <h3 className={`font-semibold line-clamp-2 leading-tight ${item.watched ? 'line-through decoration-neutral-300 dark:decoration-neutral-600 decoration-[0.5px] text-neutral-400/80 font-normal' : 'text-neutral-900 dark:text-white'}`}>
+            {item.name}
+          </h3>
+        </div>
         
-        <div className="mt-auto flex items-center justify-between text-xs font-medium text-neutral-400">
+        {((item.type !== 'anime' && (item.director || item.leadActor || item.author)) || item.releaseYear) && (
+          <div className="flex flex-col gap-1 mt-1 mb-2 text-[11px] text-neutral-600 dark:text-neutral-400 font-medium leading-tight">
+            {item.releaseYear && <span className="text-neutral-500 dark:text-neutral-500 font-normal">{item.releaseYear}</span>}
+            {item.type !== 'anime' && item.author && <span className="line-clamp-1 truncate text-indigo-600 dark:text-indigo-400/90">{item.author}</span>}
+            {item.type !== 'anime' && item.director && <span className="line-clamp-1 truncate"><span className="text-neutral-400 dark:text-neutral-500 font-normal mr-1">Dir</span>{item.director}</span>}
+            {item.type !== 'anime' && item.leadActor && <span className="line-clamp-1 truncate"><span className="text-neutral-400 dark:text-neutral-500 font-normal mr-1">With</span>{item.leadActor}</span>}
+          </div>
+        )}
+
+        <div className="mt-auto flex items-center justify-between text-[10px] font-bold text-neutral-400 pt-3 border-t border-neutral-100 dark:border-neutral-800/60">
           <span className="flex items-center gap-1 uppercase tracking-wider">
-            {item.type === 'books' || (item.type as string) === 'comics' ? <Book className="w-4 h-4" /> : getIcon()}
+            {item.type === 'books' || (item.type as string) === 'comics' ? <Book className="w-3.5 h-3.5" /> : getIcon()}
             {(item.type as string) === 'comics' ? 'books' : item.type}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 opacity-70">
             {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </span>
         </div>

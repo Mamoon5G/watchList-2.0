@@ -9,8 +9,8 @@ import { Category, WatchlistItem as WatchlistItemType } from '@/lib/types';
 import { WatchlistItem } from './WatchlistItem';
 import { AddItemComposer } from './AddItemComposer';
 import { ThemeToggle } from './ThemeToggle';
-import { searchTMDBImage } from '@/lib/tmdb';
-import { searchGoogleBooksImage } from '@/lib/books';
+import { searchTMDBOptions, getTMDBDetails } from '@/lib/tmdb';
+import { searchBookOptions } from '@/lib/books';
 import { toast } from 'sonner';
 import { LogOut, Share2, Film, Tv, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -61,54 +61,76 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
     return () => unsubscribe();
   }, [profileUid, firebaseError]);
 
-  // Backfill images for existing items
+  // Backfill metadata for existing items
   useEffect(() => {
     if (!isOwner || items.length === 0) return;
 
-    const backfillImages = async () => {
-      const itemsToUpdate = items.filter(item => item.imageUrl === undefined);
+    const backfillMetadata = async () => {
+      // Find items missing releaseYear and not already backfilled
+      const itemsToUpdate = items.filter(item => item.releaseYear === undefined && item.imageUrl !== null);
       if (itemsToUpdate.length === 0) return;
 
       for (const item of itemsToUpdate) {
         try {
-          let imageUrl = null;
+          let metadata = { imageUrl: null as string | null, director: null as string | null, leadActor: null as string | null, releaseYear: null as string | null, author: null as string | null };
+          
           if (item.type === 'books' || (item.type as string) === 'comics') {
-            imageUrl = await searchGoogleBooksImage(item.name);
+            const options = await searchBookOptions(item.name);
+            if (options.length > 0) {
+              const option = options[0];
+              if (option.imageUrl) {
+                if (option.source === 'Open Library') {
+                  metadata.imageUrl = option.imageUrl.replace('-S.jpg', '-M.jpg');
+                } else if (option.source === 'MangaDex') {
+                  metadata.imageUrl = option.imageUrl.replace('.256.jpg', '');
+                }
+              }
+              metadata.releaseYear = option.releaseYear || null;
+              metadata.author = option.author || null;
+            }
           } else {
-            imageUrl = await searchTMDBImage(item.name, item.type);
+            const options = await searchTMDBOptions(item.name, item.type);
+            if (options.length > 0 && options[0].id) {
+              const option = options[0];
+              const details = await getTMDBDetails(option.id, item.type);
+              metadata.imageUrl = details.imageUrl || null;
+              metadata.director = details.director || null;
+              metadata.leadActor = details.leadActor || null;
+              metadata.releaseYear = details.releaseYear || option.releaseYear || null;
+            }
           }
           
           const itemRef = doc(db, 'users', profileUid, 'watchlist', item.id);
-          // Set to null if not found so we don't keep retrying
-          await updateDoc(itemRef, { imageUrl: imageUrl || null });
+          await updateDoc(itemRef, { 
+            imageUrl: metadata.imageUrl !== null ? metadata.imageUrl : (item.imageUrl || null),
+            director: metadata.director,
+            leadActor: metadata.leadActor,
+            releaseYear: metadata.releaseYear,
+            author: metadata.author
+          });
         } catch (error) {
-          console.error(`Failed to backfill image for ${item.name}:`, error);
+          console.error(`Failed to backfill metadata for ${item.name}:`, error);
         }
       }
     };
 
-    backfillImages();
+    backfillMetadata();
   }, [items, isOwner, profileUid]);
 
-  const handleAdd = async (name: string, type: Category, watched: boolean) => {
+  const handleAdd = async (data: { name: string, type: Category, watched: boolean, imageUrl?: string | null, director?: string | null, leadActor?: string | null, releaseYear?: string | null, author?: string | null }) => {
     if (!isOwner) return;
     try {
-      // Async TMDB Search for Image without blocking the UI right away
-      // Actually, doing it before addDoc is fine, but can delay UI. We'll do it before.
-      let imageUrl = null;
-      if (type === 'books') {
-        imageUrl = await searchGoogleBooksImage(name);
-      } else {
-        imageUrl = await searchTMDBImage(name, type);
-      }
-      
       const itemsRef = collection(db, 'users', profileUid, 'watchlist');
       await addDoc(itemsRef, {
-        name,
-        type,
-        watched,
+        name: data.name,
+        type: data.type,
+        watched: data.watched,
         createdAt: Date.now(),
-        imageUrl
+        imageUrl: data.imageUrl || null,
+        director: data.director || null,
+        leadActor: data.leadActor || null,
+        releaseYear: data.releaseYear || null,
+        author: data.author || null
       });
       toast.success('Added to watchlist');
     } catch (err) {
@@ -255,10 +277,10 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
               setActiveTab(tab as Category | 'all');
             }}
             onClick={() => setActiveTab(tab as Category | 'all')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap capitalize shrink-0 ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap capitalize shrink-0 ${
               activeTab === tab 
-                ? 'bg-indigo-500 text-white shadow-md' 
-                : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-sm' 
+                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
             }`}
           >
             {tab === 'books' ? 'books & comics' : tab}
@@ -285,7 +307,10 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
                 
                 {catPending.length > 0 && (
                   <section>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4 px-2">Pending</h3>
+                    <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                      <h3 className="text-xs font-bold uppercase tracking-widest">Pending</h3>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <AnimatePresence mode="popLayout">
                         {catPending.map(item => (
@@ -298,7 +323,10 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
                 
                 {catFinished.length > 0 && (
                   <section>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4 px-2">Finished</h3>
+                    <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      <h3 className="text-xs font-bold uppercase tracking-widest">Finished</h3>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <AnimatePresence mode="popLayout">
                         {catFinished.map(item => (
@@ -316,7 +344,10 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
         <div className="space-y-12">
           {pendingItems.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4 px-2">Pending</h2>
+              <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                <h2 className="text-xs font-bold uppercase tracking-widest">Pending</h2>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
                   {pendingItems.map(item => (
@@ -329,7 +360,10 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
 
           {finishedItems.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4 px-2">Finished</h2>
+              <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                <h2 className="text-xs font-bold uppercase tracking-widest">Finished</h2>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
                   {finishedItems.map(item => (
