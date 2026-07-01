@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from 'react';
+import React, { useState } from 'react';
 import { WatchlistItem as WatchlistItemType } from '@/lib/types';
 import { Check, Trash2, Film, Tv, Book, Popcorn, Clock, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -13,7 +13,7 @@ interface WatchlistItemProps {
 }
 
 export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistItemProps) {
-  const [imgError, setImgError] = React.useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const getIcon = () => {
     switch (item.type as string) {

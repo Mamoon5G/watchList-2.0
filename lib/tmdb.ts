@@ -1,4 +1,5 @@
 import { SearchResult, Category } from './types';
+import axios from 'axios';
 
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -17,7 +18,7 @@ export async function searchTMDBOptions(query: string, type: Category): Promise<
     const searchType = type === 'movie' ? 'movie' : 'tv';
     const cleanedQuery = cleanQuery(query);
     
-    const response = await fetch(
+    const response = await axios.get(
       `${BASE_URL}/search/${searchType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanedQuery)}&include_adult=false&language=en-US&page=1`,
       {
         headers: {
@@ -27,9 +28,7 @@ export async function searchTMDBOptions(query: string, type: Category): Promise<
       }
     );
     
-    if (!response.ok) return [];
-    
-    const data = await response.json();
+    const data = response.data;
     if (data.results && data.results.length > 0) {
       return data.results.slice(0, 5).map((item: any) => ({
         id: item.id.toString(),
@@ -53,7 +52,7 @@ export async function getTMDBDetails(id: string, type: Category): Promise<{ imag
   try {
     const searchType = type === 'movie' ? 'movie' : 'tv';
     
-    const response = await fetch(
+    const response = await axios.get(
       `${BASE_URL}/${searchType}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits`,
       {
         headers: {
@@ -63,9 +62,7 @@ export async function getTMDBDetails(id: string, type: Category): Promise<{ imag
       }
     );
     
-    if (!response.ok) return { imageUrl: null };
-    
-    const data = await response.json();
+    const data = response.data;
     
     const imageUrl = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null;
     const releaseYear = (data.release_date || data.first_air_date || '').split('-')[0];
