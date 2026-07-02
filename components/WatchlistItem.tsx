@@ -96,7 +96,7 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
       <div className="p-4 flex flex-col flex-1 justify-start gap-3 relative z-10">
         <div className="flex flex-col space-y-1">
           <h3 
-            className="font-bold text-neutral-900 dark:text-white text-base leading-snug line-clamp-1 tracking-tight pr-6" 
+            className="font-bold text-neutral-900 dark:text-white text-base leading-snug line-clamp-2 tracking-tight pr-6 h-12" 
             title={item.name}
           >
             {item.name}
