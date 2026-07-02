@@ -42,15 +42,32 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
         setIsSearching(true);
         let results: SearchResult[] = [];
         if (type === 'books') {
-          const bookResults = await searchBookOptions(name);
-          const aniListResults = await searchAniListOptions(name, 'MANGA');
+          const [bookResults, aniListResults] = await Promise.all([
+            searchBookOptions(name),
+            searchAniListOptions(name, 'MANGA')
+          ]);
           results = [...aniListResults, ...bookResults];
         } else if (type === 'anime') {
-          const aniListResults = await searchAniListOptions(name);
-          const tmdbResults = await searchTMDBOptions(name, type);
+          const [aniListResults, tmdbResults] = await Promise.all([
+            searchAniListOptions(name),
+            searchTMDBOptions(name, type)
+          ]);
           results = [...aniListResults, ...tmdbResults.slice(0, 2)];
         } else {
-          results = await searchTMDBOptions(name, type);
+          if (activeTab === 'all') {
+            const [movieResults, seriesResults] = await Promise.all([
+              searchTMDBOptions(name, 'movie'),
+              searchTMDBOptions(name, 'series')
+            ]);
+            // Interleave results to show a mix
+            const maxLength = Math.max(movieResults.length, seriesResults.length);
+            for (let i = 0; i < maxLength; i++) {
+              if (movieResults[i]) results.push(movieResults[i]);
+              if (seriesResults[i]) results.push(seriesResults[i]);
+            }
+          } else {
+            results = await searchTMDBOptions(name, type);
+          }
         }
         setSearchResults(results);
         setIsSearching(false);

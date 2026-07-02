@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -24,8 +24,21 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
   const [firebaseError, setFirebaseError] = useState(false);
   
   const [activeTab, setActiveTab] = useState<Category | 'all'>('all');
-  
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const deleteTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   const router = useRouter();
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      deleteTimeoutsRef.current.forEach((timeout, id) => {
+        clearTimeout(timeout);
+        const itemRef = doc(db, 'users', profileUid, 'watchlist', id);
+        deleteDoc(itemRef).catch(console.error);
+      });
+    };
+  }, [profileUid]);
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'mock-api-key' || !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
@@ -150,16 +163,58 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string, name?: string) => {
     if (!isOwner) return;
-    try {
-      const itemRef = doc(db, 'users', profileUid, 'watchlist', id);
-      await deleteDoc(itemRef);
-      toast.success('Item deleted');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete item');
-    }
+    
+    const targetItem = items.find(i => i.id === id);
+    const itemName = name || targetItem?.name || 'Item';
+
+    // Hide immediately from UI
+    setPendingDeleteIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    // Schedule actual Firestore deletion
+    const timeoutId = setTimeout(async () => {
+      try {
+        const itemRef = doc(db, 'users', profileUid, 'watchlist', id);
+        await deleteDoc(itemRef);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to delete item');
+      } finally {
+        setPendingDeleteIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        deleteTimeoutsRef.current.delete(id);
+      }
+    }, 3000);
+
+    deleteTimeoutsRef.current.set(id, timeoutId);
+
+    // Show Gmail-style Undo toast
+    toast(`${itemName} deleted`, {
+      duration: 3000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const timeout = deleteTimeoutsRef.current.get(id);
+          if (timeout) {
+            clearTimeout(timeout);
+            deleteTimeoutsRef.current.delete(id);
+          }
+          setPendingDeleteIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        },
+      },
+    });
   };
 
   const handleShare = () => {
@@ -177,13 +232,14 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
   const uniqueItems = useMemo(() => {
     const seen = new Set<string>();
     return items.filter(item => {
+      if (pendingDeleteIds.has(item.id)) return false;
       const typeStr = (item.type as string) === 'comics' ? 'books' : item.type;
       const key = `${item.name.toLowerCase().trim()}-${typeStr}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-  }, [items]);
+  }, [items, pendingDeleteIds]);
 
   const filteredItems = useMemo(() => {
     return uniqueItems.filter(item => activeTab === 'all' || item.type === activeTab || (activeTab === 'books' && (item.type as string) === 'comics'));
@@ -307,9 +363,12 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
                 
                 {catPending.length > 0 && (
                   <section>
-                    <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                      <h3 className="text-xs font-bold uppercase tracking-widest">Pending</h3>
+                    <div className="flex flex-col gap-2 mb-6">
+                      <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 border border-amber-500/20 dark:border-amber-500/35">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Pending</h3>
+                      </div>
+                      <div className="h-[2px] w-full bg-amber-500/30 dark:bg-amber-500/20 rounded-full"></div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <AnimatePresence mode="popLayout">
@@ -323,9 +382,12 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
                 
                 {catFinished.length > 0 && (
                   <section>
-                    <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                      <h3 className="text-xs font-bold uppercase tracking-widest">Finished</h3>
+                    <div className="flex flex-col gap-2 mb-6">
+                      <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500 border border-emerald-500/20 dark:border-emerald-500/35">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Finished</h3>
+                      </div>
+                      <div className="h-[2px] w-full bg-emerald-500/30 dark:bg-emerald-500/20 rounded-full"></div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <AnimatePresence mode="popLayout">
@@ -344,9 +406,12 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
         <div className="space-y-12">
           {pendingItems.length > 0 && (
             <section>
-              <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                <h2 className="text-xs font-bold uppercase tracking-widest">Pending</h2>
+              <div className="flex flex-col gap-2 mb-6">
+                <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 border border-amber-500/20 dark:border-amber-500/35">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Pending</h2>
+                </div>
+                <div className="h-[2px] w-full bg-amber-500/30 dark:bg-amber-500/20 rounded-full"></div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
@@ -360,9 +425,12 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
 
           {finishedItems.length > 0 && (
             <section>
-              <div className="inline-flex items-center gap-2 mb-4 px-2 py-1 rounded-md bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                <h2 className="text-xs font-bold uppercase tracking-widest">Finished</h2>
+              <div className="flex flex-col gap-2 mb-6">
+                <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500 border border-emerald-500/20 dark:border-emerald-500/35">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Finished</h2>
+                </div>
+                <div className="h-[2px] w-full bg-emerald-500/30 dark:bg-emerald-500/20 rounded-full"></div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
