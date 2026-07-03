@@ -145,8 +145,10 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
     setSelectedOption(null);
     setSearchResults([]);
     setIsAdding(false);
-    setIsFocused(false);
-    inputRef.current?.blur();
+    setIsFocused(true);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   };
 
   const handleSelectOption = (option: SearchResult) => {

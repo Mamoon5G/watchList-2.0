@@ -325,23 +325,30 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
 
       {/* Tabs */}
       <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 hide-scrollbar border-b border-neutral-200/40 dark:border-neutral-800/40 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {(['all', 'movie', 'series', 'anime', 'books'] as const).map((tab) => (
-          <button
-            key={tab}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setActiveTab(tab as Category | 'all');
-            }}
-            onClick={() => setActiveTab(tab as Category | 'all')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap capitalize shrink-0 ${
-              activeTab === tab 
-                ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-sm' 
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            }`}
-          >
-            {tab === 'books' ? 'books & comics' : tab}
-          </button>
-        ))}
+        {(['all', 'movie', 'series', 'anime', 'books'] as const).map((tab) => {
+          const count = tab === 'all' 
+            ? uniqueItems.length 
+            : tab === 'books' 
+              ? uniqueItems.filter(i => i.type === 'books' || (i.type as string) === 'comics').length 
+              : uniqueItems.filter(i => i.type === tab).length;
+          return (
+            <button
+              key={tab}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setActiveTab(tab as Category | 'all');
+              }}
+              onClick={() => setActiveTab(tab as Category | 'all')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap capitalize shrink-0 ${
+                activeTab === tab 
+                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-sm' 
+                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              }`}
+            >
+              {tab === 'books' ? 'books & comics' : tab} {tab !== 'all' && <span className="opacity-60 text-[10px] ml-0.5 font-normal">({count})</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Lists */}
@@ -357,16 +364,19 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
             
             return (
               <div key={cat} className="space-y-8">
-                <h2 className="text-2xl font-bold capitalize text-neutral-900 dark:text-white mb-2 border-b border-neutral-200 dark:border-neutral-800 pb-4">
-                  {cat === 'series' ? 'Series' : cat === 'movie' ? 'Movies' : cat === 'books' ? 'Books & Comics' : cat}
-                </h2>
+                <div className="flex items-baseline justify-between border-b border-neutral-200 dark:border-neutral-800 pb-2 mb-2">
+                  <h2 className="text-2xl font-bold capitalize text-neutral-900 dark:text-white">
+                    {cat === 'series' ? 'Series' : cat === 'movie' ? 'Movies' : cat === 'books' ? 'Books & Comics' : cat}
+                  </h2>
+                  <span className="text-neutral-400 dark:text-neutral-500 font-normal text-sm">({catItems.length})</span>
+                </div>
                 
                 {catPending.length > 0 && (
                   <section>
                     <div className="flex flex-col gap-2 mb-6">
                       <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 border border-amber-500/20 dark:border-amber-500/35">
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Pending</h3>
+                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Pending ({catPending.length})</h3>
                       </div>
                       <div className="h-[2px] w-full bg-amber-500/30 dark:bg-amber-500/20 rounded-full"></div>
                     </div>
@@ -385,7 +395,7 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
                     <div className="flex flex-col gap-2 mb-6">
                       <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500 border border-emerald-500/20 dark:border-emerald-500/35">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Finished</h3>
+                        <h3 className="text-[10px] font-extrabold uppercase tracking-widest">Finished ({catFinished.length})</h3>
                       </div>
                       <div className="h-[2px] w-full bg-emerald-500/30 dark:bg-emerald-500/20 rounded-full"></div>
                     </div>
@@ -409,7 +419,7 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
               <div className="flex flex-col gap-2 mb-6">
                 <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 border border-amber-500/20 dark:border-amber-500/35">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Pending</h2>
+                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Pending ({pendingItems.length})</h2>
                 </div>
                 <div className="h-[2px] w-full bg-amber-500/30 dark:bg-amber-500/20 rounded-full"></div>
               </div>
@@ -428,7 +438,7 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
               <div className="flex flex-col gap-2 mb-6">
                 <div className="inline-flex items-center gap-2 self-start px-2 py-0.5 rounded bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-500 border border-emerald-500/20 dark:border-emerald-500/35">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Finished</h2>
+                  <h2 className="text-[10px] font-extrabold uppercase tracking-widest">Finished ({finishedItems.length})</h2>
                 </div>
                 <div className="h-[2px] w-full bg-emerald-500/30 dark:bg-emerald-500/20 rounded-full"></div>
               </div>

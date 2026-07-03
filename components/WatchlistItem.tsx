@@ -96,31 +96,45 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
       <div className="p-4 flex flex-col flex-1 justify-start gap-3 relative z-10">
         <div className="flex flex-col space-y-1">
           <h3 
-            className="font-bold text-neutral-900 dark:text-white text-base leading-snug line-clamp-2 tracking-tight pr-6 h-12" 
+            className="font-bold text-neutral-900 dark:text-white text-base leading-snug line-clamp-2 tracking-tight h-12" 
             title={item.name}
           >
             {item.name}
           </h3>
           
-          {((item.type !== 'anime' && (item.director || item.leadActor || item.author)) || item.releaseYear) && (
+          {(isOwner || (item.type !== 'anime' && (item.director || item.leadActor || item.author)) || item.releaseYear) && (
             <div className="flex flex-col space-y-1 text-xs text-neutral-500 dark:text-neutral-400 font-normal pt-1 leading-tight">
-              {item.releaseYear && (
-                <span className="text-neutral-500 dark:text-neutral-400">{item.releaseYear}</span>
-              )}
+              <div className="flex items-center justify-between gap-2 min-h-[28px]">
+                <span className="text-neutral-500 dark:text-neutral-400 font-normal">{item.releaseYear || ''}</span>
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item.id, item.name);
+                    }}
+                    className="p-1 rounded-lg text-red-500/70 hover:text-red-500 hover:bg-red-500/10 opacity-70 group-hover:opacity-100 transition-all duration-200 hover:scale-110 cursor-pointer shrink-0 z-20 md:hidden"
+                    title="Delete item"
+                    aria-label="Delete item"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
               {item.type !== 'anime' && item.author && (
-                <span className="line-clamp-1 truncate pr-6">
+                <span className="truncate">
                   <span className="text-neutral-400 dark:text-neutral-500 mr-1.5 font-normal">By</span>
                   <span className="text-neutral-600 dark:text-neutral-300">{item.author}</span>
                 </span>
               )}
               {item.type !== 'anime' && item.director && (
-                <span className="line-clamp-1 truncate pr-6">
+                <span className="truncate">
                   <span className="text-neutral-400 dark:text-neutral-500 mr-1.5 font-normal">Dir</span>
                   <span className="text-neutral-600 dark:text-neutral-300">{item.director}</span>
                 </span>
               )}
               {item.type !== 'anime' && item.leadActor && (
-                <span className="line-clamp-1 truncate pr-6">
+                <span className="truncate">
                   <span className="text-neutral-400 dark:text-neutral-500 mr-1.5 font-normal">With</span>
                   <span className="text-neutral-600 dark:text-neutral-300">{item.leadActor}</span>
                 </span>
@@ -129,7 +143,7 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
           )}
         </div>
 
-        {/* Absolute Delete Button */}
+        {/* Absolute Delete Button for PC screen */}
         {isOwner && (
           <button
             type="button"
@@ -137,7 +151,7 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
               e.stopPropagation();
               onDelete(item.id, item.name);
             }}
-            className="absolute bottom-3 right-3 p-1.5 rounded-lg text-red-500/70 hover:text-red-500 hover:bg-red-500/10 opacity-70 group-hover:opacity-100 transition-all duration-200 hover:scale-110 cursor-pointer z-20"
+            className="absolute bottom-3 right-3 p-1.5 rounded-lg text-red-500/70 hover:text-red-500 hover:bg-red-500/10 opacity-70 group-hover:opacity-100 transition-all duration-200 hover:scale-110 cursor-pointer z-20 hidden md:block"
             title="Delete item"
             aria-label="Delete item"
           >
