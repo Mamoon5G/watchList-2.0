@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -152,7 +152,7 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
     }
   };
 
-  const handleToggle = async (id: string, current: boolean) => {
+  const handleToggle = useCallback(async (id: string, current: boolean) => {
     if (!isOwner) return;
     try {
       const itemRef = doc(db, 'users', profileUid, 'watchlist', id);
@@ -161,9 +161,9 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
       console.error(err);
       toast.error('Failed to update status');
     }
-  };
+  }, [isOwner, profileUid]);
 
-  const handleDelete = (id: string, name?: string) => {
+  const handleDelete = useCallback((id: string, name?: string) => {
     if (!isOwner) return;
     
     const targetItem = items.find(i => i.id === id);
@@ -215,7 +215,7 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
         },
       },
     });
-  };
+  }, [isOwner, items, profileUid]);
 
   const handleShare = () => {
     const url = window.location.href;
@@ -364,11 +364,11 @@ export function Watchlist({ profileUid, profileUsername }: { profileUid: string,
             
             return (
               <div key={cat} className="space-y-8">
-                <div className="flex items-baseline justify-between border-b border-neutral-200 dark:border-neutral-800 pb-2 mb-2">
+                <div className="flex items-baseline justify-between border-b border-neutral-200 dark:border-neutral-800 pb-4 mb-2">
                   <h2 className="text-2xl font-bold capitalize text-neutral-900 dark:text-white">
                     {cat === 'series' ? 'Series' : cat === 'movie' ? 'Movies' : cat === 'books' ? 'Books & Comics' : cat}
                   </h2>
-                  <span className="text-neutral-400 dark:text-neutral-500 font-normal text-sm">({catItems.length})</span>
+                  <span className="text-neutral-400 dark:text-neutral-500 font-normal text-lg">({catItems.length})</span>
                 </div>
                 
                 {catPending.length > 0 && (

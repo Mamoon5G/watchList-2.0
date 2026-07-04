@@ -113,7 +113,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
     let metadata = { imageUrl: targetOption?.imageUrl || null, director: undefined as string | undefined, leadActor: undefined as string | undefined, releaseYear: targetOption?.releaseYear || null, author: targetOption?.author || null };
     
     if (targetOption) {
-      if (type !== 'books') {
+      if (type !== 'books' && targetOption.source !== 'AniList') {
         const details = await getTMDBDetails(targetOption.id, type);
         if (details.imageUrl) metadata.imageUrl = details.imageUrl;
         metadata.director = details.director;
@@ -226,6 +226,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="overflow-hidden absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-neutral-900 border border-neutral-200/40 dark:border-neutral-800/40 rounded-xl shadow-xl flex flex-col max-h-[60vh]"
             >
               <div className="p-4 flex flex-col gap-4 border-b border-neutral-100 dark:border-neutral-800/60 shrink-0">
@@ -319,6 +320,7 @@ function CategoryButton({ selected, onClick, icon, label }: { selected: boolean,
   return (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all flex-shrink-0 whitespace-nowrap ${
         selected 
@@ -337,6 +339,7 @@ function StatusButton({ selected, onClick, label }: { selected: boolean, onClick
   return (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`px-2.5 py-1 rounded-md transition-all text-[11px] font-bold flex items-center gap-1.5 ${
         selected 

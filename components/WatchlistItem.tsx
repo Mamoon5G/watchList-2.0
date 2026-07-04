@@ -12,7 +12,7 @@ interface WatchlistItemProps {
   onDelete: (id: string, name?: string) => void;
 }
 
-export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistItemProps) {
+export const WatchlistItem = React.memo(function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistItemProps) {
   const [imgError, setImgError] = useState(false);
 
   const getIcon = () => {
@@ -38,7 +38,7 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.2 }}
+      transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
       className={`group relative flex flex-col rounded-2xl border transition-all duration-300 ease-out overflow-hidden h-full shadow-sm hover:shadow-md hover:-translate-y-1.5 bg-white dark:bg-[#121316] text-neutral-900 dark:text-white ${
         item.watched 
           ? 'border-emerald-500/20 dark:border-emerald-500/30 hover:border-emerald-500/40 dark:hover:border-emerald-500/50 hover:shadow-emerald-500/5' 
@@ -161,4 +161,4 @@ export function WatchlistItem({ item, isOwner, onToggle, onDelete }: WatchlistIt
       </div>
     </motion.div>
   );
-}
+});
