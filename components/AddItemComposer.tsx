@@ -290,7 +290,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
                             <span className="text-neutral-500 truncate max-w-[200px]">
                               {[
                                 result.releaseYear,
-                                result.rating ? `${result.rating}⭐` : null,
+                                (type !== 'books' && (type as string) !== 'comics' && result.rating) ? `${result.rating}⭐` : null,
                                 result.author
                               ].filter(Boolean).join(' • ')}
                             </span>

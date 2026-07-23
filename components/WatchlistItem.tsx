@@ -108,7 +108,7 @@ export const WatchlistItem = React.memo(function WatchlistItem({ item, isOwner, 
                 <span className="text-neutral-500 dark:text-neutral-400 font-normal">
                   {[
                     item.releaseYear,
-                    item.rating ? `${item.rating}⭐` : null
+                    (item.type !== 'books' && (item.type as string) !== 'comics' && item.rating) ? `${item.rating}⭐` : null
                   ].filter(Boolean).join('   ·  ')}
                 </span>
                 {isOwner && (
