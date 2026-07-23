@@ -62,7 +62,7 @@ export const WatchlistItem = React.memo(function WatchlistItem({ item, isOwner, 
         )}
         
         {/* Date Badge Top-Left */}
-        <div className={`absolute top-3 left-3 z-10 px-2 py-0.5 rounded backdrop-blur-md font-semibold text-[10px] flex items-center gap-1 shadow-sm border ${
+        <div className={`absolute top-3 left-3 z-10 px-2 py-0.5 rounded bg-white/90 dark:bg-neutral-900/90 font-semibold text-[10px] flex items-center gap-1 shadow-sm border ${
           item.watched 
             ? 'bg-neutral-950/80 text-emerald-400 border-emerald-500/50' 
             : 'bg-neutral-950/80 text-amber-400 border-amber-500/50'
@@ -79,7 +79,7 @@ export const WatchlistItem = React.memo(function WatchlistItem({ item, isOwner, 
             if (isOwner) onToggle(item.id, item.watched);
           }}
           disabled={!isOwner}
-          className={`absolute top-3 right-3 z-10 w-5 h-5 rounded-md border-2 backdrop-blur-md transition-all duration-200 flex items-center justify-center shadow-md ${
+          className={`absolute top-3 right-3 z-10 w-5 h-5 rounded-md border-2 bg-white/90 dark:bg-neutral-900/90 transition-all duration-200 flex items-center justify-center shadow-md ${
             isOwner ? 'cursor-pointer hover:scale-110' : 'cursor-default'
           } ${
             item.watched
@@ -105,7 +105,12 @@ export const WatchlistItem = React.memo(function WatchlistItem({ item, isOwner, 
           {(isOwner || (item.type !== 'anime' && (item.director || item.leadActor || item.author)) || item.releaseYear) && (
             <div className="flex flex-col space-y-1 text-xs text-neutral-500 dark:text-neutral-400 font-normal pt-1 leading-tight">
               <div className="flex items-center justify-between gap-2 min-h-[28px]">
-                <span className="text-neutral-500 dark:text-neutral-400 font-normal">{item.releaseYear || ''}</span>
+                <span className="text-neutral-500 dark:text-neutral-400 font-normal">
+                  {[
+                    item.releaseYear,
+                    item.rating ? `${item.rating}⭐` : null
+                  ].filter(Boolean).join('   ·  ')}
+                </span>
                 {isOwner && (
                   <button
                     type="button"

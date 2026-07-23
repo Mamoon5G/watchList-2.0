@@ -20,6 +20,7 @@ export async function searchAniListOptions(query: string, mediaType: 'ANIME' | '
           startDate {
             year
           }
+          averageScore
           coverImage {
             large
           }
@@ -79,6 +80,7 @@ export async function searchAniListOptions(query: string, mediaType: 'ANIME' | '
         source: 'AniList',
         type: (mediaType === 'MANGA' ? 'books' : 'anime') as any,
         author,
+        rating: item.averageScore ? item.averageScore / 10 : null,
       };
     });
   } catch (error) {

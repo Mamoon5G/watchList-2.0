@@ -37,6 +37,7 @@ export async function searchTMDBOptions(query: string, type: Category): Promise<
         imageUrl: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
         source: 'TMDB',
         type: type,
+        rating: item.vote_average ? Math.round(item.vote_average * 10) / 10 : null,
       }));
     }
     return [];
@@ -46,7 +47,7 @@ export async function searchTMDBOptions(query: string, type: Category): Promise<
   }
 }
 
-export async function getTMDBDetails(id: string, type: Category): Promise<{ imageUrl: string | null; director?: string; leadActor?: string; releaseYear?: string }> {
+export async function getTMDBDetails(id: string, type: Category): Promise<{ imageUrl: string | null; director?: string; leadActor?: string; releaseYear?: string; rating?: number | null }> {
   if (!TMDB_API_KEY || !id || type === 'books') return { imageUrl: null };
 
   try {
@@ -66,6 +67,7 @@ export async function getTMDBDetails(id: string, type: Category): Promise<{ imag
     
     const imageUrl = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null;
     const releaseYear = (data.release_date || data.first_air_date || '').split('-')[0];
+    const rating = data.vote_average ? Math.round(data.vote_average * 10) / 10 : null;
     
     let director = undefined;
     let leadActor = undefined;
@@ -84,7 +86,7 @@ export async function getTMDBDetails(id: string, type: Category): Promise<{ imag
       }
     }
     
-    return { imageUrl, director, leadActor, releaseYear };
+    return { imageUrl, director, leadActor, releaseYear, rating };
   } catch (error) {
     console.error('TMDB details error:', error);
     return { imageUrl: null };

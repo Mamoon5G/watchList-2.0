@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { Send, X, Film, Tv, Book, Popcorn, Search, Loader2 } from 'lucide-react';
+import { Send, X, Search, Loader2 } from 'lucide-react';
 import { Category, SearchResult } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { searchTMDBOptions, getTMDBDetails } from '@/lib/tmdb';
@@ -10,7 +10,7 @@ import { searchBookOptions, getBookDetails } from '@/lib/books';
 import { searchAniListOptions } from '@/lib/anilist';
 
 interface AddItemComposerProps {
-  onAdd: (data: { name: string, type: Category, watched: boolean, imageUrl?: string | null, director?: string | null, leadActor?: string | null, releaseYear?: string | null, author?: string | null }) => void;
+  onAdd: (data: { name: string, type: Category, watched: boolean, imageUrl?: string | null, director?: string | null, leadActor?: string | null, releaseYear?: string | null, author?: string | null, rating?: number | null }) => void;
   activeTab: Category | 'all';
 }
 
@@ -110,7 +110,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
       }
     }
 
-    let metadata = { imageUrl: targetOption?.imageUrl || null, director: undefined as string | undefined, leadActor: undefined as string | undefined, releaseYear: targetOption?.releaseYear || null, author: targetOption?.author || null };
+    let metadata = { imageUrl: targetOption?.imageUrl || null, director: undefined as string | undefined, leadActor: undefined as string | undefined, releaseYear: targetOption?.releaseYear || null, author: targetOption?.author || null, rating: targetOption?.rating || null };
     
     if (targetOption) {
       if (type !== 'books' && targetOption.source !== 'AniList') {
@@ -139,6 +139,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
       leadActor: metadata.leadActor || null,
       releaseYear: metadata.releaseYear || null,
       author: metadata.author || null,
+      rating: metadata.rating || null,
     });
     
     setName('');
@@ -234,10 +235,10 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
                   {/* Category Selection */}
                   {activeTab === 'all' && (
                     <div className="flex overflow-x-auto hide-scrollbar items-center gap-1 bg-neutral-100 dark:bg-neutral-800/50 p-1 rounded-xl w-full">
-                      <CategoryButton selected={type === 'movie'} onClick={() => setType('movie')} icon={<Film className="w-4 h-4 whitespace-nowrap shrink-0" />} label="Movie" />
-                      <CategoryButton selected={type === 'series'} onClick={() => setType('series')} icon={<Tv className="w-4 h-4 whitespace-nowrap shrink-0" />} label="Series" />
-                      <CategoryButton selected={type === 'anime'} onClick={() => setType('anime')} icon={<Popcorn className="w-4 h-4 whitespace-nowrap shrink-0" />} label="Anime" />
-                      <CategoryButton selected={type === 'books'} onClick={() => setType('books')} icon={<Book className="w-4 h-4 whitespace-nowrap shrink-0" />} label="Books & Comics" />
+                      <CategoryButton selected={type === 'movie'} onClick={() => setType('movie')} label="Movie" />
+                      <CategoryButton selected={type === 'series'} onClick={() => setType('series')} label="Series" />
+                      <CategoryButton selected={type === 'anime'} onClick={() => setType('anime')} label="Anime" />
+                      <CategoryButton selected={type === 'books'} onClick={() => setType('books')} label="Books & Comics" />
                     </div>
                   )}
 
@@ -286,14 +287,13 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="font-semibold text-sm truncate text-neutral-900 dark:text-white">{result.title}</span>
                           <div className="flex items-center gap-2 text-xs text-neutral-500 mt-0.5">
-                            {result.releaseYear && <span>{result.releaseYear}</span>}
-                            {result.releaseYear && <span>•</span>}
-                            {result.author && (
-                              <>
-                                <span className="truncate max-w-[120px]">{result.author}</span>
-                                <span>•</span>
-                              </>
-                            )}
+                            <span className="text-neutral-500 truncate max-w-[200px]">
+                              {[
+                                result.releaseYear,
+                                result.rating ? `${result.rating}⭐` : null,
+                                result.author
+                              ].filter(Boolean).join(' • ')}
+                            </span>
                             <span className="uppercase text-[9px] tracking-wider font-bold bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-indigo-500">
                               {result.source}
                             </span>
@@ -316,7 +316,7 @@ export function AddItemComposer({ onAdd, activeTab }: AddItemComposerProps) {
   );
 }
 
-function CategoryButton({ selected, onClick, icon, label }: { selected: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+function CategoryButton({ selected, onClick, label }: { selected: boolean, onClick: () => void, label: string }) {
   return (
     <button
       type="button"
@@ -328,7 +328,6 @@ function CategoryButton({ selected, onClick, icon, label }: { selected: boolean,
           : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium'
       }`}
     >
-      {icon}
       <span>{label}</span>
     </button>
   );

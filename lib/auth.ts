@@ -21,4 +21,3 @@ export async function getUsernameByUid(uid: string): Promise<string | null> {
   }
   return null;
 }
-

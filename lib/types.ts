@@ -11,6 +11,7 @@ export interface WatchlistItem {
   leadActor?: string | null;
   releaseYear?: string | null;
   author?: string | null;
+  rating?: number | null;
 }
 
 export interface UserDoc {
@@ -25,4 +26,5 @@ export interface SearchResult {
   source: string;
   type: Category;
   author?: string | null;
+  rating?: number | null;
 }

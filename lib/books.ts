@@ -19,6 +19,7 @@ export async function searchBookOptions(query: string): Promise<SearchResult[]> 
         source: 'Open Library',
         type: 'books' as const,
         author: doc.author_name && doc.author_name.length > 0 ? doc.author_name[0] : undefined,
+        rating: doc.ratings_average ? Math.round((doc.ratings_average * 2) * 10) / 10 : null,
       }));
       results = [...results, ...olResults];
     }
